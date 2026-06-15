@@ -1,6 +1,6 @@
-======================
-Partycjonowanie danych
-======================
+=========================================
+Wydajność, skalowanie i replikacja danych
+=========================================
 
 +---------+--------------------------+
 | Autorzy:| 1. Olaf Chomicki         |
@@ -11,50 +11,50 @@ Partycjonowanie danych
 Wstęp
 =====
 
-Partycjonowanie danych to technika architektoniczna polegająca na dzieleniu dużych tabel lub indeksów bazy danych na mniejsze, łatwiejsze w zarządzaniu fragmenty, zwane partycjami. Z punktu widzenia aplikacji, dane zazwyczaj nadal wyglądają jak jedna logiczna całość, ale fizycznie są oddzielone [1]_. Głównym celem stosowania tej techniki jest poprawa wydajności, skalowalności oraz ułatwienie zarządzania ogromnymi zbiorami danych w nowoczesnych systemach informatycznych.
+W erze gwałtownego wzrostu ilości generowanych informacji, stabilne działanie systemów bazodanowych stało się fundamentem nowoczesnych aplikacji. Wydajność, skalowanie oraz replikacja to trzy ściśle powiązane ze sobą filary, które decydują o tym, czy baza danych będzie w stanie obsłużyć rosnącą liczbę użytkowników oraz operacji w jednostce czasu. Zrozumienie różnic oraz synergii między tymi pojęciami jest kluczowe dla każdego architekta oprogramowania [1]_.
 
-W systemach bazodanowych szczególnie ważne jest to, że wraz ze wzrostem wolumenu danych operacje takie jak odczyt, zapis czy tworzenie kopii zapasowych stają się coraz wolniejsze. Dzięki partycjonowaniu, zapytania mogą skanować tylko te fragmenty tabeli, które są rzeczywiście potrzebne, co znacząco optymalizuje procesy dyskowe i zużycie pamięci operacyjnej oraz zasobów procesora.
-
-
-Korzyści i podstawowe podziały
-==============================
-
-Jednym z podstawowych celów wdrażania partycjonowania jest mechanizm *partition pruning* (odcinanie partycji). Pozwala on silnikowi bazy danych ignorować podczas wykonywania zapytania te partycje, które na pewno nie zawierają wyników, o które prosi użytkownik lub aplikacja. Ponadto ułatwione jest zarządzanie cyklem życia informacji – archiwalne dane można szybko odłączyć lub usunąć operując wyłącznie na metadanych, zamiast obciążać system długotrwałymi operacjami kasowania pojedynczych wierszy.
-
-Wyróżnia się dwa główne typy partycjonowania: poziome oraz pionowe. Partycjonowanie poziome polega na podziale wierszy – różne grupy rekordów trafiają do różnych partycji na podstawie zdefiniowanego klucza. Z kolei partycjonowanie pionowe dzieli tabelę na kolumny, separując rzadko używane lub bardzo duże dane (np. pliki binarne, długie teksty) od tych odpytywanych najczęściej, co zmniejsza rozmiar bloku danych odczytywanego z dysku [2]_.
+Podczas gdy wydajność skupia się na optymalizacji istniejących zasobów w celu jak najszybszego przetwarzania pojedynczych żądań, skalowanie i replikacja odpowiadają na wyzwania związane z ograniczeniami sprzętowymi oraz koniecznością zapewnienia ciągłości działania systemu w przypadku awarii.
 
 
-Strategie podziału horyzontalnego
-=================================
+Wydajność baz danych
+====================
 
-W praktyce inżynierskiej najczęściej stosuje się partycjonowanie poziome, które realizuje się za pomocą kilku podstawowych strategii. Partycjonowanie zakresowe (Range Partitioning) dzieli dane na podstawie ciągłych przedziałów wartości. Jest to najczęstszy wybór w przypadku danych powiązanych z czasem, gdzie każda fizyczna partycja reprezentuje określony miesiąc lub rok. 
+Wydajność (Performance) odnosi się do szybkości, z jaką system bazodanowy reaguje na zapytania i transakcje. Na poziomie pojedynczej instancji kluczowe znaczenie ma optymalizacja kodu SQL, poprawne projektowanie indeksów oraz unikanie kosztownych operacji, takich jak pełne skanowanie tabel (Full Table Scan). Optymalizator bazy danych stara się dobrać najlepszą ścieżkę wykonania zapytania, jednak jego skuteczność zależy od aktualności statystyk oraz struktury danych [2]_.
 
-Kolejną strategią jest partycjonowanie listowe (List Partitioning), w którym wiersze są przypisywane do partycji na podstawie przynależności do zdefiniowanej listy wartości (np. kodów regionów lub statusów dokumentu). Często stosuje się również partycjonowanie skrótu (Hash Partitioning), które wykorzystuje funkcję matematyczną do równomiernego rozłożenia danych, co świetnie sprawdza się w sytuacjach braku naturalnego klucza biznesowego [3]_. Czasem stosuje się podejścia złożone, łączące np. podział po dacie z hashowaniem.
-
-
-Partycjonowanie a architektura rozproszona
-==========================================
-
-Kluczowym aspektem przy projektowaniu większych systemów jest odróżnienie tradycyjnego partycjonowania od shardingu. Partycjonowanie w klasycznym ujęciu ma miejsce wewnątrz pojedynczej instancji bazy danych (np. na jednym serwerze w PostgreSQL czy Oracle). Wszystkie partycje, choć oddzielone fizycznie na dysku, współdzielą moc obliczeniową i pamięć tego samego serwera.
-
-Sharding to natomiast specyficzna forma partycjonowania horyzontalnego, ale w architekturze rozproszonej (Shared-Nothing). Każdy fragment danych ("shard") staje się autonomiczną bazą danych rezydującą na oddzielnym węźle. Takie podejście wymuszone jest w momencie, w którym ograniczenia sprzętowe pojedynczej maszyny ulegają wyczerpaniu, zmuszając do równoległego podziału obciążenia na klaster serwerów [4]_.
+Po stronie sprzętowej wąskimi gardłami najczęściej stają się operacje wejścia/wyjścia (I/O) dysków, dostępna pamięć RAM (służąca jako bufor dla często odczytywanych stron danych) oraz moc procesora. Wyczerpanie tych zasobów bezpośrednio przekłada się na wzrost opóźnień (latency) i spadek przepustowości (throughput).
 
 
-Wyzwania, problemy i ograniczenia
-=================================
+Skalowanie: Pionowe vs. Poziome
+===============================
 
-Mimo znacznych korzyści wydajnościowych, partycjonowanie rodzi specyficzne wyzwania projektowe. Niewłaściwy dobór klucza podziału może doprowadzić do powstania tzw. gorących punktów (hotspots), gdzie większość ruchu i tak trafia tylko do jednej partycji, niwelując korzyści ze skali. Ponadto, zapytania wymuszające złączenia (Cross-partition joins) między danymi rozrzuconymi po różnych partycjach bywają mocno obciążające dla optymalizatora bazy danych [5]_.
+Gdy optymalizacja zapytań przestaje wystarczać, system musi zostać poddany skalowaniu. Skalowanie pionowe (Scaling Up) polega na zwiększaniu zasobów pojedynczej maszyny – dodaniu szybszych procesorów, większej ilości pamięci RAM lub wydajniejszych dysków SSD. Jest to najprostsze podejście, niepoprawiające jednak architektury aplikacji, ale ma swoje fizyczne i ekonomiczne granice (prawo malejących przychodów oraz limit techniczny serwera) [3]_.
 
-Administratorzy i programiści muszą również przemyśleć strategię indeksowania. Indeksy lokalne (tworzone oddzielnie dla każdej partycji) są bardzo łatwe w utrzymaniu, ale mogą spowalniać globalne wyszukiwanie. Z kolei indeksy globalne (pokrywające całą tabelę niezależnie od podziału) znacząco przyspieszają odczyt, lecz ich utrzymanie i przebudowa bywają bardzo kosztowne podczas modyfikowania struktury partycji.
+Skalowanie poziome (Scaling Out) polega na dodawaniu kolejnych maszyn do klastra. W kontekście baz danych jest to zadanie znacznie trudniejsze niż w przypadku bezstanowych aplikacji webowych, ponieważ wymaga mechanizmów dystrybucji danych. Jedną z głównych metod skalowania poziomego zapisu jest sharding, czyli fizyczny podział bazy na niezależne węzły.
+
+
+Replikacja danych i wysoka dostępność
+=====================================
+
+Replikacja to proces kopiowania danych z jednego serwera bazy danych (węzła głównego/Primary) na jeden lub więcej serwerów pomocniczych (węzłów potomnych/Replica). Głównym celem replikacji jest zapewnienie wysokiej dostępności (High Availability) – w razie awarii serwera głównego, jedna z replik może przejąć jego funkcję, minimalizując czas przestoju systemu [4]_.
+
+Dodatkowo replikacja pozwala na skalowanie operacji odczytu (Read Scalability). Aplikacja może kierować zapytania modyfikujące dane (INSERT, UPDATE) do węzła Primary, natomiast ciężkie zapytania raportowe i odczyty rozpraszać na repliki. Replikacja może odbywać się synchronicznie (gwarantuje spójność danych, ale zwalnia zapisy) lub asynchronicznie (szybsza, ale niesie ryzyko utraty ostatnich transakcji w przypadku nagłej awarii).
+
+
+Wyzwania i kompromisy architektoniczne
+======================================
+
+Budowanie systemów wysoce skalowalnych i zreplikowanych wiąże się z koniecznością akceptacji kompromisów, co formalnie opisuje twierdzenie CAP (Consistency, Availability, Partition Tolerance). Mówi ono, że w rozproszonym systemie komputerowym można jednocześnie zapewnić tylko dwie z trzech wymienionych cech [5]_. 
+
+W praktyce systemy bazodanowe często muszą wybierać pomiędzy silną spójnością danych (wszyscy użytkownicy widzą dokładnie to samo w tym samym momencie) a wysoką dostępnością i niskimi opóźnieniami, co doprowadziło do popularyzacji modeli spójności ostatecznej (Eventual Consistency) w bazach typu NoSQL.
 
 
 Podsumowanie
 ============
 
-Partycjonowanie danych to standardowe narzędzie pozwalające radzić sobie z ogromnymi przyrostami danych. Pozwala na utrzymanie stabilnej wydajności zapytań i upraszcza procesy administracyjne. Decyzja o jego zastosowaniu musi jednak opierać się na dokładnej analizie wzorców dostępu do danych (query patterns), aby zagwarantować, że narzut związany z zarządzaniem wieloma partycjami nie przerośnie korzyści wynikających z przyspieszonego działania systemu.
+Wydajność, skalowanie i replikacja nie są niezależnymi wyspami – to naczynia połączone. Dobrze zoptymalizowana pod kątem wydajności baza danych odwleka w czasie moment, w którym konieczne stanie się kosztowne skalowanie. Z kolei właściwie wdrożona replikacja nie tylko zabezpiecza system przed utratą danych, ale stanowi naturalny krok w kierunku poziomego skalowania odczytów. Architektura systemu musi być stale dostosowywana do dynamicznie zmieniających się wymagań biznesowych oraz skali operacji.
 
-.. [1] "Architektura systemów bazodanowych" - Podstawy i fizyczny podział danych.
-.. [2] "Optymalizacja I/O w relacyjnych bazach danych".
-.. [3] Metody zapewniania równomiernego rozkładu danych przy użyciu algorytmów hashujących.
-.. [4] Różnice między partycjonowaniem wertykalnym, horyzontalnym a architekturą Shared-Nothing.
-.. [5] Problem optymalizacji złożonych zapytań SQL w rozproszonych modelach danych.
+.. [1] "Projektowanie systemów rozproszonych" – Podstawy skalowalności baz danych.
+.. [2] "Optymalizacja zapytań i indeksowanie w relacyjnych bazach danych".
+.. [3] Analiza kosztów i barier technologicznych w skalowaniu pionowym.
+.. [4] Mechanizmy replikacji synchronicznej i asynchronicznej w systemach High Availability.
+.. [5] Twierdzenie CAP a praktyczne implementacje nowoczesnych magazynów danych.
