@@ -62,7 +62,7 @@ Replikacja polega na permanentnym kopiowaniu i synchronizowaniu danych z główn
 Po drugie, umożliwia skalowanie odczytów (Read Scalability). Przekierowanie operacji modyfikujących (INSERT, UPDATE) do węzła głównego, a operacji odczytu oraz generowania ciężkich raportów na repliki pozwala na znaczne odciążenie głównego serwera.
 
 Oprogramowanie i zaimplementowane mechanizmy replikacji
-======================================================
+=======================================================
 
 Mechanizmy replikacji mogą być realizowane na poziomie silnika bazy danych lub za pomocą zewnętrznego oprogramowania. Wyróżnia się dwa główne podejścia pod kątem transmisji danych: replikację opartą na logu (WAL - Write-Ahead Logging) oraz replikację logiczną. Ze względu na synchronizację, proces ten może przebiegać synchronicznie lub asynchronicznie.
 
@@ -79,7 +79,7 @@ Przykład konfiguracji replikacji logicznej (wbudowanej w PostgreSQL):
    PUBLICATION pub_dane_sprzedazy;
 
 Limity systemu oraz ograniczanie dostępu użytkowników
-======================================================
+=====================================================
 
 Bezpieczeństwo i stabilność bazy danych wymagają rygorystycznego zarządzania limitami systemowymi oraz uprawnieniami. Zbyt duża swoboda przyznana użytkownikom lub procesom aplikacyjnym może doprowadzić do celowego bądź przypadkowego unieruchomienia systemu.
 
